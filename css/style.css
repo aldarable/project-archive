@@ -1,15 +1,33 @@
 .block-container{
-    padding-top:1.2rem;
-    padding-bottom:2rem;
     max-width:1450px;
-
+    padding-top:1rem;
+    padding-bottom:3rem;
+}
+header{
+    visibility:hidden;
+}
+footer{
+    visibility:hidden;
+}
+#MainMenu{
+    visibility:hidden;
+}
+.stMetric{
+    border-radius:20px;
+}
+[data-testid="stMetric"]{
+    border-radius:20px;
+    border:1px solid rgba(255,255,255,.08);
+    padding:18px;
+    background:rgba(255,255,255,.03);
 }
 h1{
     font-weight:700;
 }
-
-div[data-testid="stMetric"]{
-    border-radius:18px;
-    padding:18px;
-    background:#ffffff08;
+h2{
+    font-weight:700;
+}
+hr{
+    margin-top:5px;
+    margin-bottom:15px;
 }
