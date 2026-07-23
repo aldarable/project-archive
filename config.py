@@ -1,8 +1,6 @@
-APP_TITLE = "DCI Project Monitoring System"
+APP_NAME = "DCI Project Monitoring System"
 
-APP_ICON = "📊"
-
-DEFAULT_PROJECT = "JK7"
+VERSION = "2026"
 
 PROJECTS = [
     "JK5",
@@ -14,10 +12,19 @@ PROJECTS = [
     "GIS"
 ]
 
-CHAPTERS = {
-    1: "S-Curve",
-    2: "Manpower",
-    3: "Document",
-    4: "Safety",
-    5: "Equipment"
-}
+CHAPTERS = [
+    "S-Curve",
+    "Manpower",
+    "Document",
+    "Safety",
+    "Equipment"
+]
+
+DEFAULT_PROJECT = "JK7"
+PRIMARY = "#4F7CF7"
+SUCCESS = "#22C55E"
+WARNING = "#F59E0B"
+DANGER = "#EF4444"
+PURPLE = "#7C3AED"
+
+GRAY = "#64748B"
