@@ -1,128 +1,15 @@
-/* JK7 Monitoring Dashboard — light corporate theme
-   Soft pink / soft purple / soft blue accents, rounded cards, soft shadows. */
+.block-container{
+    padding-top:1.2rem;
+    padding-bottom:2rem;
+    max-width:1450px;
 
-:root {
-    --jk7-bg: #F9F8FC;
-    --jk7-card: #FFFFFF;
-    --jk7-ink: #2C2A3A;
-    --jk7-muted: #8A8798;
-    --jk7-pink: #F0A6C6;
-    --jk7-purple: #B39DDB;
-    --jk7-blue: #8FB8E8;
-    --jk7-border: #ECEAF4;
-    --jk7-shadow: 0 4px 18px rgba(120, 110, 160, 0.10);
+}
+h1{
+    font-weight:700;
 }
 
-/* App background */
-[data-testid="stAppViewContainer"], .main {
-    background: var(--jk7-bg);
+div[data-testid="stMetric"]{
+    border-radius:18px;
+    padding:18px;
+    background:#ffffff08;
 }
-
-section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #FFFFFF 0%, #FBF7FB 100%);
-    border-right: 1px solid var(--jk7-border);
-}
-
-h1, h2, h3, h4, h5 {
-    color: var(--jk7-ink);
-    font-family: "Segoe UI", "Inter", sans-serif;
-    font-weight: 700;
-}
-
-p, span, div, label {
-    color: var(--jk7-ink);
-}
-
-/* Cards / containers */
-div[data-testid="stMetric"], div[data-testid="stExpander"], .stDataFrame, .stForm {
-    background: var(--jk7-card);
-    border-radius: 16px;
-    box-shadow: var(--jk7-shadow);
-    border: 1px solid var(--jk7-border);
-    padding: 0.6rem 0.9rem;
-}
-
-div[data-testid="stMetric"] {
-    padding: 1rem 1.2rem;
-}
-
-/* KPI card (custom HTML component) */
-.kpi-card {
-    background: var(--jk7-card);
-    border-radius: 16px;
-    box-shadow: var(--jk7-shadow);
-    border: 1px solid var(--jk7-border);
-    border-top: 4px solid var(--accent, var(--jk7-blue));
-    padding: 0.9rem 1.1rem;
-    margin-bottom: 0.6rem;
-}
-.kpi-label {
-    font-size: 0.78rem;
-    color: var(--jk7-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 0.25rem;
-}
-.kpi-value {
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: var(--jk7-ink);
-}
-.kpi-delta {
-    font-size: 0.8rem;
-    color: var(--jk7-muted);
-    margin-top: 0.2rem;
-}
-
-/* Status badge */
-.status-badge {
-    border-radius: 12px;
-    border: 1px solid color-mix(in srgb, var(--badge-color) 55%, transparent);
-    background: color-mix(in srgb, var(--badge-color) 14%, white);
-    padding: 0.6rem 0.9rem;
-}
-.status-badge-label {
-    font-size: 0.72rem;
-    color: var(--jk7-muted);
-    letter-spacing: 0.05em;
-}
-.status-badge-value {
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--badge-color);
-}
-
-/* Tabs */
-button[data-baseweb="tab"] {
-    border-radius: 10px 10px 0 0;
-}
-
-/* Buttons */
-.stButton > button, .stFormSubmitButton > button {
-    border-radius: 10px;
-    border: 1px solid var(--jk7-border);
-    box-shadow: var(--jk7-shadow);
-}
-.stButton > button[kind="primary"], .stFormSubmitButton > button[kind="primary"] {
-    background: linear-gradient(135deg, var(--jk7-pink), var(--jk7-purple));
-    border: none;
-    color: white;
-}
-
-/* Dividers */
-hr {
-    border-color: var(--jk7-border);
-}
-
-/* "Coming soon" placeholder chapters */
-.coming-soon {
-    text-align: center;
-    padding: 4rem 1rem;
-    background: var(--jk7-card);
-    border-radius: 20px;
-    box-shadow: var(--jk7-shadow);
-    border: 1px dashed var(--jk7-purple);
-}
-.coming-soon .emoji { font-size: 3rem; }
-.coming-soon h2 { margin-top: 0.5rem; }
-.coming-soon p { color: var(--jk7-muted); }
