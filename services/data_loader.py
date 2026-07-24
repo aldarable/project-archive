@@ -17,6 +17,40 @@ def _to_num(series: pd.Series) -> pd.Series:
     return pd.to_numeric(series.replace("", np.nan), errors="coerce")
 
 
+def _fix_pct_scale_glitches(series: pd.Series) -> pd.Series:
+    """Fix cumulative %-complete values that land ~100x too small.
+
+    `PlanPct_%` / `ActualPct_%` are read with `UNFORMATTED_VALUE`, which
+    returns a cell's *underlying* stored number, not what's displayed. Most
+    rows are plain Number cells (e.g. 41.04 stored as 41.04), but if a cell
+    (or a run of cells) has Percent number-format applied instead, Sheets
+    stores it as a fraction (0.4104) even though it still *displays* as
+    "41.04%" — so the app reads 0.41 instead of 41.04. This one format
+    mismatch on a handful of rows in the sheet is the actual cause of
+    "Actual" reading e.g. 0.42% when the real cumulative value is 41.04%.
+
+    Since these columns are running cumulative totals, they should trend
+    upward and stay on a 0-100 scale. A run of values that suddenly drops
+    to ~1/100th of the running high-water mark - and would land back above
+    it once scaled by 100 - is that formatting glitch, not real data. Fix
+    those in place; genuinely small values early in the series (before any
+    high-water mark is established) are left untouched.
+    """
+    arr = series.to_numpy(dtype=float)
+    out = arr.copy()
+    running_max = 0.0
+    for i, v in enumerate(arr):
+        if np.isnan(v):
+            continue
+        if running_max > 1 and 0 < v < (running_max / 10):
+            scaled = v * 100
+            out[i] = scaled
+            running_max = max(running_max, scaled)
+        else:
+            running_max = max(running_max, v)
+    return pd.Series(out, index=series.index)
+
+
 def _parse_sheet_date(series: pd.Series) -> pd.Series:
     """Parse a raw date column coming from Google Sheets.
 
@@ -58,10 +92,17 @@ def load_scurve_main(project: str) -> pd.DataFrame:
     df["Date"] = _parse_sheet_date(df["Date"])
     for c in ["PlanZoning", "PlanCum", "PlanPct_%", "ActualZoning", "ActualCum", "ActualPct_%"]:
         df[c] = _to_num(df[c])
+    for c in ["PlanPct_%", "ActualPct_%"]:
+        df[c] = _fix_pct_scale_glitches(df[c])
     df["Remarks"] = df["Remarks"].fillna("").astype(str)
     df = df.dropna(subset=["Date"]).sort_values("Date").reset_index(drop=True)
-    # Deviation is always recomputed in-app, never trusted blindly from the sheet.
+    # Signed deviation (Actual - Plan) is always recomputed in-app, never
+    # trusted blindly from the sheet — used for the on-track/behind status
+    # label and the "vs plan" delta. The dashboard's S-Curve chart plots the
+    # absolute value instead (deviation magnitude only, always >= 0), which
+    # is the intended display convention for that chart.
     df["DeviationPct"] = df["ActualPct_%"] - df["PlanPct_%"]
+    df["DeviationPctAbs"] = df["DeviationPct"].abs()
     return df
 
 
