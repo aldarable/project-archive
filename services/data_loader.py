@@ -17,6 +17,33 @@ def _to_num(series: pd.Series) -> pd.Series:
     return pd.to_numeric(series.replace("", np.nan), errors="coerce")
 
 
+def _parse_sheet_date(series: pd.Series) -> pd.Series:
+    """Parse a raw date column coming from Google Sheets.
+
+    `gsheet_client.read_tab` reads cells with `UNFORMATTED_VALUE`, so any
+    date-formatted cell arrives as a bare number - the spreadsheet "serial"
+    day count since 1899-12-30 - not a date string. Feeding that straight
+    into `pd.to_datetime()` makes pandas treat it as a nanosecond offset
+    from 1970-01-01, which collapses every date onto ~Jan 1, 1970 (the root
+    cause of the "cut off as of 1970" bug and the collapsed, single-point
+    S-Curve/Manpower charts).
+
+    This converts numeric serials using the correct spreadsheet epoch and
+    still falls back to normal string parsing for any cell typed in as text
+    (e.g. "2026-07-20"), so both sources of data keep working.
+    """
+    s = series.copy()
+    numeric = pd.to_numeric(s, errors="coerce")
+    is_serial = numeric.notna()
+
+    out = pd.Series(pd.NaT, index=s.index, dtype="datetime64[ns]")
+    if is_serial.any():
+        out.loc[is_serial] = pd.to_datetime(numeric[is_serial], unit="D", origin="1899-12-30")
+    if (~is_serial).any():
+        out.loc[~is_serial] = pd.to_datetime(s[~is_serial], errors="coerce")
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Chapter 1 — daily zoning S-Curve + Zone/Kolom log (tab: <project>-scurve)
 # ---------------------------------------------------------------------------
@@ -28,7 +55,7 @@ def load_scurve_main(project: str) -> pd.DataFrame:
         return pd.DataFrame()
 
     df = raw[config.SCURVE_MAIN_COLS].copy()
-    df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+    df["Date"] = _parse_sheet_date(df["Date"])
     for c in ["PlanZoning", "PlanCum", "PlanPct_%", "ActualZoning", "ActualCum", "ActualPct_%"]:
         df[c] = _to_num(df[c])
     df["Remarks"] = df["Remarks"].fillna("").astype(str)
@@ -47,7 +74,7 @@ def load_zone_kolom(project: str) -> pd.DataFrame:
         return pd.DataFrame()
 
     df = raw[needed].copy()
-    df["Date Structure"] = pd.to_datetime(df["Date Structure"], errors="coerce")
+    df["Date Structure"] = _parse_sheet_date(df["Date Structure"])
     df["Done"] = _to_num(df["Done"])
     df["Target"] = _to_num(df["Target"])
     df["Level"] = df["Level"].astype(str).str.strip()
@@ -200,12 +227,7 @@ def load_sumaraja_scurve(project: str) -> pd.DataFrame:
                 actual_totals[k] += v
                 actual_counts[k] += 1
 
-    out_dates = []
-    for j in week_cols:
-        d = week_dates[j] if j < len(week_dates) else None
-        if isinstance(d, str):
-            d = pd.to_datetime(d, errors="coerce")
-        out_dates.append(d)
+    out_dates = [week_dates[j] if j < len(week_dates) else None for j in week_cols]
 
     df = pd.DataFrame({
         "Week": [str(week_labels[j]).strip() for j in week_cols],
@@ -214,11 +236,17 @@ def load_sumaraja_scurve(project: str) -> pd.DataFrame:
         "ActualWeekly": actual_totals,
         "HasActual": [c > 0 for c in actual_counts],
     })
-    df["WeekStart"] = pd.to_datetime(df["WeekStart"], errors="coerce")
+    # Dates from Google Sheets (UNFORMATTED_VALUE) arrive as spreadsheet
+    # serial numbers, not strings — see _parse_sheet_date for why this must
+    # not go through a plain pd.to_datetime() call.
+    df["WeekStart"] = _parse_sheet_date(df["WeekStart"])
     df = df.dropna(subset=["WeekStart"]).reset_index(drop=True)
+    df["PlanWeeklyPct"] = df["PlanWeekly"] * 100
+    df["ActualWeeklyPct"] = df["ActualWeekly"] * 100
     df["PlanCumPct"] = df["PlanWeekly"].cumsum() * 100
     df["ActualCumPct"] = df["ActualWeekly"].cumsum() * 100
     df.loc[~df["HasActual"], "ActualCumPct"] = np.nan
+    df.loc[~df["HasActual"], "ActualWeeklyPct"] = np.nan
     return df
 
 
@@ -236,7 +264,7 @@ def load_manpower(project: str) -> pd.DataFrame:
         df = df.rename(columns={"Date": "date"})
     if "date" not in df.columns:
         return pd.DataFrame()
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df["date"] = _parse_sheet_date(df["date"])
     for c in [*config.MANPOWER_CATEGORIES, "Total", "Manhours"]:
         if c in df.columns:
             df[c] = _to_num(df[c]).fillna(0)
