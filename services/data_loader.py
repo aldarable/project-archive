@@ -78,9 +78,7 @@ def _parse_sheet_date(series: pd.Series) -> pd.Series:
     return out
 
 
-# ---------------------------------------------------------------------------
-# Chapter 1 — daily zoning S-Curve + Zone/Kolom log (tab: <project>-scurve)
-# ---------------------------------------------------------------------------
+# Chapter 1 — daily zoning S-Curve + Zone/Kolom log
 @st.cache_data(ttl=config.CACHE_TTL_SECONDS, show_spinner=False)
 def load_scurve_main(project: str) -> pd.DataFrame:
     tab = config.gsheet_tab(project, "scurve")
@@ -204,9 +202,7 @@ def append_zone_kolom_update(project: str, level: str, metric: str, done: float,
     load_zone_kolom.clear()
 
 
-# ---------------------------------------------------------------------------
-# Chapter 1 (secondary) — Sumaraja vendor weekly S-Curve (tab: <project>-sri-scurve)
-# ---------------------------------------------------------------------------
+# Chapter 1 (secondary) — Sumaraja vendor weekly S-Curve 
 @st.cache_data(ttl=config.CACHE_TTL_SECONDS, show_spinner=False)
 def load_sumaraja_scurve(project: str) -> pd.DataFrame:
     """Parses the vendor's weekly work-item S-Curve sheet into a tidy
@@ -291,9 +287,7 @@ def load_sumaraja_scurve(project: str) -> pd.DataFrame:
     return df
 
 
-# ---------------------------------------------------------------------------
-# Chapter 2 — HSE Manpower (tab: <project>-manpower)
-# ---------------------------------------------------------------------------
+# Chapter 2 — HSE Manpower
 @st.cache_data(ttl=config.CACHE_TTL_SECONDS, show_spinner=False)
 def load_manpower(project: str) -> pd.DataFrame:
     tab = config.gsheet_tab(project, "manpower")
@@ -343,9 +337,43 @@ def append_manpower_row(project: str, row_date: date, values_by_category: dict) 
     load_manpower.clear()
 
 
-# ---------------------------------------------------------------------------
-# Chapter 3 — Document Control (tab: <project>-docon)
-# ---------------------------------------------------------------------------
+# Chapter 4 — HSE Safety
+@st.cache_data(ttl=config.CACHE_TTL_SECONDS, show_spinner=False)
+def load_hse_safety(project: str) -> pd.DataFrame:
+    """Findings log: one row per observation (not one row per day), so
+    several rows can share the same Date and dates aren't necessarily
+    consecutive — filtering/aggregation must group by Date rather than
+    assume a fixed daily cadence."""
+    tab = config.gsheet_tab(project, "hse-safety")
+    raw = gs.read_tab(tab)
+    if raw.empty or "Date" not in raw.columns:
+        return pd.DataFrame()
+
+    df = raw.copy()
+    df.columns = [str(c).strip() for c in df.columns]
+    df["Date"] = _parse_sheet_date(df["Date"])
+    df = df.dropna(subset=["Date"])
+
+    text_cols = [
+        "Observation", "Assessment", "Risks", "Photos",
+        "Rectification Evidence (Site Photos)", "Remarks",
+        "Scope / Not Scope {DCI)", "Status",
+    ]
+    for c in text_cols:
+        if c in df.columns:
+            df[c] = df[c].fillna("").astype(str).str.strip()
+    if "Status" in df.columns:
+        df["Status"] = df["Status"].replace("", "Open")
+    if "No" in df.columns:
+        df["No"] = _to_num(df["No"])
+
+    df = df.sort_values("Date").reset_index(drop=True)
+    return df
+
+
+
+# Chapter 3 — Document Control
+
 @st.cache_data(ttl=config.CACHE_TTL_SECONDS, show_spinner=False)
 def load_docon(project: str) -> pd.DataFrame:
     tab = config.gsheet_tab(project, "docon")
