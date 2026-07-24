@@ -59,7 +59,7 @@ def render(project: str) -> None:
     # --- Combined S-Curve: Plan vs Actual vs Deviation ---------------------
     st.markdown("##### 📈 S-Curve — Plan vs Actual vs Deviation")
     st.plotly_chart(scurve_combined_chart(df), width="stretch", config={"displayModeBar": False})
-    st.caption("Deviation bars (right axis) are read directly from the sheet's DevPct_% column — recomputed here, not manually maintained.")
+    st.caption("Deviation is plotted as an absolute value (|Actual − Plan|) on the same axis as Plan/Actual — recomputed in-app, not read from the sheet's DevPct_% column.")
 
     # --- Sumaraja (vendor) weekly S-Curve ----------------------------------
     st.markdown("##### 📈 S-Curve — Sumaraja (Vendor Weekly Report)")
