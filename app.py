@@ -1,3 +1,8 @@
+"""
+app.py for Project Monitoring Dashboard entry point.
+
+"""
+
 from __future__ import annotations
 import streamlit as st
 import config
@@ -14,7 +19,7 @@ st.set_page_config(
 # Sidebar
 with st.sidebar:
     st.markdown("## 📊 Monitoring Dashboard")
-    st.caption("Site progress, manpower, and document control at a glance.")
+    st.caption("Site progress, manpower, document control, HSE Safety, and Equipment at a glance.")
     st.divider()
     st.markdown("**Legend**")
     st.markdown(
@@ -32,7 +37,7 @@ with st.sidebar:
     st.caption("This app is view-only — edit the source files to update figures.")
 
 
-# Top bar navigation
+# Top bar — Project + Chapter selection
 st.markdown(
     "<div style='font-size:0.78rem; opacity:0.55; text-transform:uppercase; letter-spacing:0.06em;'>Project</div>",
     unsafe_allow_html=True,
@@ -53,7 +58,9 @@ chapter_choice = st.pills(
     label_visibility="collapsed", key="chapter_pill",
 )
 chapter = (chapter_choice or chapter_labels[0]).split(" · ")[0]
+
 st.divider()
+
 
 # Routing
 if project not in config.ACTIVE_PROJECTS:
@@ -71,4 +78,5 @@ else:
         from chapters.chapter4_safety import render
     else:
         from chapters.chapter5_equipment import render
+
     render(project)
