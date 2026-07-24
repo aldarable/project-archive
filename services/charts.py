@@ -65,9 +65,10 @@ def scurve_plan_actual_chart(df: pd.DataFrame) -> go.Figure:
 
 
 def scurve_combined_chart(df: pd.DataFrame, plan_col: str = "PlanPct_%", actual_col: str = "ActualPct_%",
-                           dev_col: str = "DeviationPct") -> go.Figure:
-    """Single chart: Plan vs Actual (cumulative %, left axis) + Deviation
-    (right axis) + Milestone markers from Remarks — matches the combined
+                           dev_col: str = "DeviationPctAbs") -> go.Figure:
+    """Single chart, single shared axis: Plan, Actual, and Deviation
+    (plotted as a positive magnitude — |Actual - Plan| — by design, not a
+    signed value) + Milestone markers from Remarks. Matches the combined
     'S-Curve — Plan vs Actual vs Deviation' view."""
     fig = go.Figure()
 
@@ -82,10 +83,10 @@ def scurve_combined_chart(df: pd.DataFrame, plan_col: str = "PlanPct_%", actual_
         fill="tozeroy", fillcolor=_rgba(COLORS["actual"], 0.15),
         hovertemplate="Actual: %{y:.2f}%<extra></extra>",
     ))
-    fig.add_trace(go.Bar(
-        x=df["Date"], y=df[dev_col], name="Deviation", yaxis="y2",
-        marker=dict(color=_rgba(COLORS["deviation"], 0.55)),
-        hovertemplate="Deviation: %{y:+.2f}%<extra></extra>",
+    fig.add_trace(go.Scatter(
+        x=df["Date"], y=df[dev_col], name="Deviation",
+        mode="lines", line=dict(color=COLORS["deviation"], width=2),
+        hovertemplate="Deviation: %{y:.2f}%<extra></extra>",
     ))
 
     remarks_col = "Remarks" if "Remarks" in df.columns else None
@@ -102,11 +103,8 @@ def scurve_combined_chart(df: pd.DataFrame, plan_col: str = "PlanPct_%", actual_
     fig.update_layout(
         **_BASE_LAYOUT,
         height=380,
-        yaxis=dict(title="Cumulative %", range=[0, 100], ticksuffix="%", **_AXIS),
-        yaxis2=dict(title="Deviation (%)", overlaying="y", side="right", showgrid=False, ticksuffix="%",
-                     tickfont=dict(color=TEXT)),
+        yaxis=dict(title="Percentage (%)", range=[0, 100], ticksuffix="%", **_AXIS),
         xaxis=dict(**_AXIS),
-        barmode="overlay",
     )
     return fig
 
