@@ -1,25 +1,44 @@
 """
-app.py for Project Monitoring Dashboard entry point.
-
+app.py — DCI Project Monitoring System, entry point.
 """
 
 from __future__ import annotations
 import streamlit as st
 import config
 from chapters._placeholder import coming_soon
+from utils import load_css
 
 st.set_page_config(
-    page_title="Project Monitoring Dashboard",
+    page_title="DCI Project Monitoring System",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded",
 )
+load_css(config.BASE_DIR / "css" / "style.css")
+
 
 
 # Sidebar
 with st.sidebar:
-    st.markdown("## 📊 Monitoring Dashboard")
-    st.caption("Site progress, manpower, document control, HSE Safety, and Equipment at a glance.")
+    st.markdown("### ℹ️ About Dashboard")
+    st.caption(
+        "Site progress, manpower, document control, HSE Safety, and Equipment "
+        "monitoring for DCI Indonesia project sites."
+    )
+    st.markdown(f"**Version**  \n{config.APP_VERSION}")
+    st.markdown(f"**Last Updated**  \n{config.LAST_UPDATED}")
+
+    if config.PDF_REPORT_PATH.exists():
+        with open(config.PDF_REPORT_PATH, "rb") as f:
+            st.download_button(
+                "📄 PDF Report", data=f.read(),
+                file_name=config.PDF_REPORT_PATH.name, mime="application/pdf",
+                width="stretch",
+            )
+    else:
+        st.button("📄 PDF Report", disabled=True, width="stretch",
+                   help="Drop the report file at assets/report.pdf to enable this.")
+
     st.divider()
     st.markdown("**Legend**")
     st.markdown(
@@ -33,13 +52,25 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
     st.divider()
-    st.caption("Data source: CSV files maintained by the project team.")
-    st.caption("This app is view-only — edit the source files to update figures.")
+    st.caption("Data source: Google Sheet (Project-Archive), editable directly from this app.")
 
 
-# Top bar — Project + Chapter selection
+
+# Top bar-
+logo_col, title_col = st.columns([1, 9])
+with logo_col:
+    if config.LOGO_PATH.exists():
+        st.image(str(config.LOGO_PATH), width=64)
+    else:
+        st.markdown("<div style='font-size:2.2rem;'>🏢</div>", unsafe_allow_html=True)
+with title_col:
+    st.markdown(
+        f"<div style='font-size:1.4rem; font-weight:800; letter-spacing:0.02em; padding-top:0.3rem;'>{config.APP_TITLE}</div>",
+        unsafe_allow_html=True,
+    )
+
 st.markdown(
-    "<div style='font-size:0.78rem; opacity:0.55; text-transform:uppercase; letter-spacing:0.06em;'>Project</div>",
+    "<div style='font-size:0.78rem; opacity:0.55; text-transform:uppercase; letter-spacing:0.06em; margin-top:0.6rem;'>Project</div>",
     unsafe_allow_html=True,
 )
 project = st.pills(
@@ -52,19 +83,20 @@ st.markdown(
     "<div style='font-size:0.78rem; opacity:0.55; text-transform:uppercase; letter-spacing:0.06em; margin-top:0.4rem;'>Chapter</div>",
     unsafe_allow_html=True,
 )
-chapter_labels = [f"{k} · {v}" for k, v in config.CHAPTERS.items()]
+chapter_labels = list(config.CHAPTERS.values())
 chapter_choice = st.pills(
     "Chapter", chapter_labels, default=chapter_labels[0],
     label_visibility="collapsed", key="chapter_pill",
 )
-chapter = (chapter_choice or chapter_labels[0]).split(" · ")[0]
+chapter_choice = chapter_choice or chapter_labels[0]
+chapter = next(k for k, v in config.CHAPTERS.items() if v == chapter_choice)
 
 st.divider()
 
 
 # Routing
 if project not in config.ACTIVE_PROJECTS:
-    st.subheader("Structure Works")
+    st.subheader(f"{project} STRUCTURE WORKS")
     st.title(config.CHAPTERS.get(chapter, ""))
     coming_soon(f"{project} Dashboard", "🏗️")
 else:
