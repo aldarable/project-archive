@@ -221,6 +221,52 @@ def single_line_chart(df: pd.DataFrame, y_col: str, color: str, height: int = 28
 
 
 
+# Chapter 4 — HSE Safety
+def hse_status_donut(df: pd.DataFrame, status_col: str, colors: dict, height: int = 300) -> go.Figure:
+    counts = df[status_col].value_counts()
+    fig = go.Figure(go.Pie(
+        labels=counts.index.tolist(), values=counts.values.tolist(), hole=0.58,
+        marker=dict(colors=[colors.get(lbl, COLORS["purple"]) for lbl in counts.index],
+                    line=dict(color="rgba(0,0,0,0)", width=0)),
+        textinfo="value+percent", hovertemplate="%{label}: %{value} (%{percent})<extra></extra>",
+    ))
+    fig.update_layout(**_BASE_LAYOUT, height=height, showlegend=True)
+    return fig
+
+
+def hse_category_bar(df: pd.DataFrame, cat_col: str, colors: dict, height: int = 260) -> go.Figure:
+    counts = df[cat_col].value_counts()
+    bar_colors = [colors.get(lbl, COLORS["purple"]) for lbl in counts.index]
+    fig = go.Figure(go.Bar(
+        x=counts.values.tolist(), y=counts.index.tolist(), orientation="h",
+        marker=dict(color=bar_colors),
+        hovertemplate="%{y}: %{x}<extra></extra>",
+    ))
+    fig.update_layout(
+        **_BASE_LAYOUT, height=height, showlegend=False,
+        xaxis=dict(title="Count", **_AXIS), yaxis=dict(**_AXIS),
+    )
+    return fig
+
+
+def hse_trend_chart(df: pd.DataFrame, date_col: str, status_col: str, colors: dict, height: int = 320) -> go.Figure:
+    """Findings per day, stacked by Status — dates on the sheet are not
+    necessarily consecutive, so this groups rather than assumes daily rows."""
+    grouped = df.groupby([date_col, status_col]).size().reset_index(name="Count")
+    fig = go.Figure()
+    for status in sorted(grouped[status_col].unique()):
+        sub = grouped[grouped[status_col] == status]
+        fig.add_trace(go.Bar(
+            x=sub[date_col], y=sub["Count"], name=status,
+            marker=dict(color=colors.get(status, COLORS["purple"])),
+        ))
+    fig.update_layout(
+        **_BASE_LAYOUT, height=height, barmode="stack",
+        yaxis=dict(title="Findings", **_AXIS), xaxis=dict(title="Date", **_AXIS),
+    )
+    return fig
+
+
 # Chapter 3 — Document Control
 def docon_grouped_bar(vendors: list[str], series: dict[str, list[float]], colors: list[str], height: int = 420) -> go.Figure:
     fig = go.Figure()
