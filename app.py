@@ -17,7 +17,6 @@ st.set_page_config(
 load_css(config.BASE_DIR / "css" / "style.css")
 
 
-
 # Sidebar
 with st.sidebar:
     st.markdown("### ℹ️ About Dashboard")
@@ -54,13 +53,8 @@ with st.sidebar:
     st.divider()
     st.caption("Data source: Google Sheet (Project-Archive), editable directly from this app.")
 
-    st.caption(f"Version : {APP_VERSION}")
-    st.caption(f"Last Data Update : {last_data_update}")   # dari Google Sheets
-    st.caption(f"Last Code Update : {LAST_CODE_UPDATE}")   # dari GitHub
 
-
-
-# Top bar
+# Top bar 
 logo_col, title_col = st.columns([1, 9])
 with logo_col:
     if config.LOGO_PATH.exists():
