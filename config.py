@@ -27,7 +27,7 @@ CHAPTERS: dict[str, str] = {
     "4": "Safety",
     "5": "Equipment",
 }
-ACTIVE_CHAPTERS: set[str] = {"1", "2", "3"}
+ACTIVE_CHAPTERS: set[str] = {"1", "2", "3", "4"}
 
 
 def project_dir(project: str) -> Path:
@@ -79,6 +79,16 @@ MANPOWER_COLORS = {
     "Total": "#6366F1",
     "Manhours": "#A855F7",
 }
+
+
+# Chapter 4 — HSE Safety
+HSE_SAFETY_COLS = [
+    "No", "Date", "Observation", "Assessment", "Risks", "Photos",
+    "Rectification Evidence (Site Photos)", "Remarks", "Scope / Not Scope {DCI)", "Status",
+]
+HSE_STATUS_COLORS = {"Open": "#EF4444", "Close": "#10B981"}
+HSE_ASSESSMENT_COLORS = {"Unacceptable": "#EF4444", "Need Improvements": "#F59E0B"}
+HSE_RISK_COLORS = {"P0 - Significant Risks": "#EF4444", "P1 - Managable Risks": "#F59E0B"}
 
 
 # Chapter 3 — Document Control
