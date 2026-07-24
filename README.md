@@ -1,117 +1,75 @@
-# Project Monitoring Dashboard
+# DCI Project Monitoring System
 
-A clean, minimalist Streamlit dashboard for site progress, HSE manpower, and
-document control monitoring. **View-only** app — there is no data-entry UI.
-Two different data sources, by design:
+A Streamlit dashboard for site progress (S-Curve), HSE manpower, document
+control, HSE safety, and equipment monitoring — one project + chapter picker
+at the top, editable data underneath.
 
-- **Chapter 1 (S-Curve)** — static local files under `data/<project>/`,
-  generated once from the vendor's own weekly S-Curve Excel report. Update
-  by re-generating these files when a new report comes in.
-- **Chapters 2-3 (HSE Manpower, Document Control)** — live from a **Google
-  Sheet**, one worksheet tab per chapter. Edit the Sheet and the dashboard
-  reflects it on next load (cache TTL: 60s). No local files, no GitHub
-  commits needed for these two.
+## What was fixed
 
-## Structure
+The app was crashing with an `IndentationError` because
+`services/gsheet_client.py` had an empty `class GSheetError(RuntimeError):`
+with no body. That's fixed, and the whole data layer has been rebuilt.
+
+## What changed
+
+- **Single data source.** Everything (S-Curve, Sumaraja vendor S-Curve, Zone/
+  Kolom log, Manpower, Document Control) now reads from **one Google Sheet**
+  mirroring `Project-Archive-3.xlsx`, via the `gcp_service_account` + `sheet_id`
+  secrets you already configured on Streamlit Cloud. No more local CSVs.
+- **Editable.** The Daily Report form, the Zone/Kolom "Update Daily Progress"
+  form, and the Manpower "Input / Update Daily Data" form all write straight
+  back to the Sheet (previously the app was view-only).
+- **Sidebar** simplified to: About Dashboard, Version, Last Updated, PDF
+  Report (a download button — drop your exported report at
+  `assets/report.pdf` to enable it).
+- **Top bar**: logo + "DCI PROJECT MONITORING SYSTEM" title, Project pills
+  (JK5, JK6, JK7, JK8, H301, H302, GIS), Chapter pills (S-Curve, Manpower,
+  Document, Safety, Equipment). Drop your DCI Indonesia logo at
+  `assets/logo_dci.png` to replace the placeholder icon.
+- **Chapter 1 (S-Curve)** now includes everything from your reference PDF:
+  - KPI cards (Overall Target / Plan / Actual / Status)
+  - one combined **Plan vs Actual vs Deviation** chart
+  - a second **Sumaraja (vendor) weekly S-Curve** chart, parsed from the
+    `-sri-scurve` tab
+  - **Daily Report** form + **Milestone Tracker** table (from the `Remarks`
+    column)
+  - **Progress Table** with CSV download
+  - **Zone / Kolom Progress** per level (GF / L1 / L2) with denah images,
+    daily/weekly/accumulative stats
+  - **Update Daily Progress** form for the Zone/Kolom log
+- A parsing error in any one section (e.g. a malformed Sumaraja sheet) is now
+  caught locally and shown as a warning — it no longer takes down the whole
+  page like the old bug did.
+
+## Google Sheet tab naming
+
+One spreadsheet, one tab per project per chapter, named
+`<project>-<chapter>` (lowercase project code), matching the source workbook:
 
 ```
-app.py                        # top bar (Project + Chapter) + routing only
-config.py                     # projects, chapters, colors, field mappings, gsheet tab names
-utils.py                      # formatting + minimal metric-card helper
-services/
-  data_loader.py              # data access (cached) — CSV for Ch.1, Sheets for Ch.2-3
-  gsheet_client.py            # gspread auth + cached tab reader (creds via st.secrets)
-  charts.py                   # Plotly figure builders (theme-adaptive)
-chapters/
-  chapter1_scurve.py          # S-Curve (Plan/Actual/Deviation) + Work Breakdown
-  chapter2_manpower.py        # HSE Manpower (4 focused charts)
-  chapter3_docon.py           # Document Control (Overall / Vendor / PMO)
-  chapter4_safety.py          # placeholder — coming soon
-  chapter5_equipment.py       # placeholder — coming soon
-  _placeholder.py             # shared "coming soon" block
-data/
-  jk7/
-    scurve_main.csv           # weekly Plan vs Actual cumulative % (S-Curve report)
-    scurve_workbreakdown.csv  # per work-package: weight + % of own scope done
-    scurve_meta.json          # report header (contractor, week, last updated)
-.streamlit/
-  secrets.toml.example        # template — copy to secrets.toml and fill in your own creds
-requirements.txt
+jk7-scurve        Chapter 1 — daily zoning S-Curve (cols A:J) + Zone/Kolom log (cols L:P)
+jk7-sri-scurve     Chapter 1 — Sumaraja vendor weekly work-item S-Curve
+jk7-manpower       Chapter 2 — HSE Manpower
+jk7-docon          Chapter 3 — Document Control
+jk7-hse-safety     Chapter 4 — placeholder, not wired up yet
+jk7-equipment      Chapter 5 — placeholder, not wired up yet
 ```
 
-## Top bar
+`jk7-scurve` columns, exactly as in the source file:
 
-- **Project**: JK5DH3, JK6DH3, JK7, JK8, H301, H302, GIS — only **JK7** has
-  live data today; the rest show a "Coming Soon" placeholder. Add a project by
-  adding local S-Curve files (Chapter 1) and adding the project name to
-  `config.ACTIVE_PROJECTS`.
-- **Chapter**: 1 S-Curve, 2 HSE Manpower, 3 Document Control (all live),
-  4 HSE Safety, 5 Equipment (both placeholders for now).
+| A | B | C | D | E | F | G | H | I | J | K | L | M | N | O | P |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Date | PlanZoning | PlanCum | PlanPct_% | ActualZoning | ActualCum | ActualPct_% | DevAbs_unit | DevPct_% | Remarks | *(spacer)* | Date Structure | Level | Metric | Done | Target |
 
-## Theme
+To add a new project, add its 6 tabs (same layout) and add the project code
+to `config.ACTIVE_PROJECTS`.
 
-No custom theme is injected — Streamlit's native light/dark toggle (⋮ menu,
-top right) controls the whole app. Only chart colors are fixed, since they
-need to stay meaningful regardless of theme:
+## Google Sheets access (already configured per your message)
 
-- **Plan** → blue
-- **Actual** → amber
-- **Deviation** → red (always — a deviation chart is a warning signal)
-- Small purple / pink / teal accents used for secondary KPIs and categories.
-
-## Setting up Google Sheets (Chapters 2 & 3)
-
-1. **Rotate any credentials that have ever been pasted into chat, a doc, or
-   a screenshot.** In Google Cloud Console → IAM & Admin → Service Accounts,
-   delete the old key and generate a fresh one. Never treat a key that's
-   been shared outside the console as safe to keep using.
-2. Share your Google Sheet with the service account's `client_email`
-   (Viewer access is enough — the app only reads).
-3. In the Sheet, make two tabs (default names below — change in
-   `config.GSHEET_TABS` if yours differ):
-   - **`HSE_Manpower`** — same columns as before: `Date, HSE, K2, Tim Besi,
-     Tim Baja, Tim Begisting, Tim Bobok, Tim Cor, Total, Manhours`. Add a
-     `Project` column if you'll eventually track more than one project in
-     the same tab; omit it while it's JK7-only.
-   - **`Document_Control`** — same columns as before: `VENDOR, Total
-     Deliverable, Submitted [Vendor], ...` (see `config.DOCON_FIELD_MAP`
-     for the full list). Same optional `Project` column.
-4. Copy `.streamlit/secrets.toml.example` to `.streamlit/secrets.toml`
-   locally and fill in your **new, rotated** service account JSON + your
-   sheet ID. This file is git-ignored — never commit it.
-5. Deploying on Streamlit Community Cloud: don't upload a secrets.toml at
-   all. Paste the same TOML content into the app's **Settings → Secrets**
-   box in the Cloud dashboard.
-
-If Sheets access fails (missing secret, sheet not shared, wrong tab name),
-Chapters 2 and 3 show a plain error message in the page instead of crashing
-the whole app — Chapter 1 keeps working regardless, since it's local.
-
-## Data notes — S-Curve (Chapter 1)
-
-`scurve_main.csv` and `scurve_workbreakdown.csv` are built from the vendor's
-own **"WEEKLY S-CURVE PROGRESS REPORT"** (PT. Sumaraja Indah, Structure
-scope, JK7 — currently at Week 9, last updated 23 July 2026):
-
-- `scurve_main.csv` — one row per week (25 weeks, W#1–W#25), with the
-  report's own cumulative Plan % and cumulative Actual % (`PlanCumPct_%`,
-  `ActualCumPct_%`). Weeks beyond the latest report (W#10 onward) carry a
-  Plan value but a blank Actual — that's what makes the Actual line stop at
-  the current week and the Plan line keep going. **Deviation** is always
-  recomputed in-app as `Actual − Plan` (signed), so it's never trusted
-  blindly from the sheet and always resolves to blank for future weeks.
-- `scurve_workbreakdown.csv` — one row per work package (Preliminaries,
-  Foundation, Ground Floor, 1st–3rd Roof Floor, Stair, water tanks, etc.),
-  with each package's weight (`LoadPct`, its share of the total project) and
-  how much of its **own** scope is actually complete (`ActualPct`), derived
-  by summing the vendor's weekly actual entries for that package and
-  dividing by its total weight.
-- `scurve_meta.json` — small header block (contractor, service scope, week
-  label, report date) shown as a caption above the KPI cards.
-
-To refresh this chapter next week, re-derive these same 3 files from the
-updated vendor report — this chapter stays local/static by design, separate
-from the Sheets-backed chapters.
+Your service account needs **edit** access now (not just Viewer), since the
+Daily Report / Update Progress forms write back to the sheet. Share the
+Sheet with the service account's `client_email` as **Editor**. Secrets format
+is unchanged — see `.streamlit/secret.toml.example`.
 
 ## Running locally
 
@@ -120,11 +78,19 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## Adding a new project or chapter
+## Notes / assumptions to double-check
 
-1. Chapter 1: create `data/<project>/` with the 3 S-Curve files.
-2. Chapters 2-3: add a `Project` column to the Sheet tabs if not already
-   present, and make sure your new project's rows use a matching value.
-3. Add the project name to `config.ACTIVE_PROJECTS`.
-4. For a new chapter, add it to `config.CHAPTERS` / `config.ACTIVE_CHAPTERS`
-   and create `chapters/chapterN_xxx.py` with a `render(project: str)` function.
+- **Daily Report** updates the existing scheduled row for that date (it
+  doesn't append a new one) — the sheet is pre-populated with future dates
+  that already carry a Plan value and a blank Actual. If the date you pick
+  isn't already a row, you'll get a clear error instead of a silent write to
+  the wrong place.
+- **Total zoning target** (used to turn cumulative Actual into a %) is
+  derived from the sheet itself (`PlanCum ÷ PlanPct_%`), not hardcoded —
+  double check the S-Curve chart matches your expectations after your first
+  live update.
+- **Sumaraja S-Curve** parser locates the row containing `W#1` and assumes a
+  `Plan` row immediately followed by an `Actual` row for each work item, with
+  weekly weighted values from column I onward. If Sumaraja's sheet layout
+  changes, this section will show a warning instead of crashing — re-check
+  `services/data_loader.py::load_sumaraja_scurve`.
