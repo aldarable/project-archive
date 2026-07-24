@@ -58,8 +58,8 @@ ZONE_METRICS: list[str] = ["Zone", "Kolom"]
 # Denah (floor plan) images per level/metric — set to None where not available yet.
 DENAH_ASSETS: dict[str, dict[str, str | None]] = {
     "GF": {"Zone": "assets/denah_gf.jpeg", "Kolom": "assets/denah_kolom_gf.jpg"},
-    "L1": {"Zone": "assets/denah_L1.jpeg", "Kolom": "assets/denah_kolom_L1.jpg"},
-    "L2": {"Zone": None, "Kolom": None},
+    "L1": {"Zone": "assets/denah_L1.jpg", "Kolom": "assets/denah_kolom_L1.jpg"},
+    "L2": {"Zone": "assets/denah_L2.jpg", "Kolom": None},
 }
 
 
