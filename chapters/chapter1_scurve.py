@@ -56,12 +56,12 @@ def render(project: str) -> None:
 
     st.divider()
 
-    # --- Combined S-Curve: Plan vs Actual vs Deviation ---------------------
+    # S-Curve: Plan vs Actual vs Deviation
     st.markdown("##### 📈 S-Curve — Plan vs Actual vs Deviation")
     st.plotly_chart(scurve_combined_chart(df), width="stretch", config={"displayModeBar": False})
     st.caption("Deviation is plotted as an absolute value (|Actual − Plan|) on the same axis as Plan/Actual — recomputed in-app, not read from the sheet's DevPct_% column.")
 
-    # --- Sumaraja (vendor) weekly S-Curve ----------------------------------
+    # Sumaraja (vendor) weekly S-Curve 
     st.markdown("##### 📈 S-Curve — Sumaraja (Vendor Weekly Report)")
     try:
         sri_df = dl.load_sumaraja_scurve(project)
@@ -80,7 +80,7 @@ def render(project: str) -> None:
 
     st.divider()
 
-    # --- Daily Report + Milestone Tracker -----------------------------------
+    # Daily Report + Milestone Tracker
     col_report, col_milestone = st.columns(2)
 
     with col_report:
@@ -112,7 +112,7 @@ def render(project: str) -> None:
 
     st.divider()
 
-    # --- Progress Table ------------------------------------------------------
+    # Progress Table 
     st.markdown("##### 📋 Progress Table")
     table = df[["Date", "PlanZoning", "PlanPct_%", "ActualZoning", "ActualPct_%", "DeviationPct", "Remarks"]].copy()
     table.columns = ["Date", "Plan.day", "Plan Cum %", "Actual.day", "Actual Cum %", "Deviation %", "Remarks"]
@@ -125,8 +125,8 @@ def render(project: str) -> None:
 
     st.divider()
 
-    # --- Zone / Kolom Progress -------------------------------------------------
-    st.markdown("##### 🏗️ Zone / Kolom Progress")
+    #  Zone / Kolom Progress
+    st.markdown("##### 🏗️ Zone / Coloumn Progress")
     st.caption("Sourced from the columns beside 'Remarks' in the same source S-Curve tab.")
 
     try:
@@ -171,7 +171,7 @@ def render(project: str) -> None:
 
     st.divider()
 
-    # --- Update Daily Progress (Zone/Kolom) form -----------------------------
+    #  Update Daily Progress (Zone/Kolom) form
     with st.expander("✏️ Update Daily Progress (Zone/Kolom)"):
         with st.form("zone_kolom_form"):
             zc1, zc2 = st.columns(2)
