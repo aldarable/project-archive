@@ -102,7 +102,7 @@ def scurve_combined_chart(df: pd.DataFrame, plan_col: str = "PlanPct_%", actual_
     fig.update_layout(
         **_BASE_LAYOUT,
         height=380,
-        yaxis=dict(title="Cumulative %", ticksuffix="%", **_AXIS),
+        yaxis=dict(title="Cumulative %", range=[0, 100], ticksuffix="%", **_AXIS),
         yaxis2=dict(title="Deviation (%)", overlaying="y", side="right", showgrid=False, ticksuffix="%",
                      tickfont=dict(color=TEXT)),
         xaxis=dict(**_AXIS),
@@ -112,21 +112,39 @@ def scurve_combined_chart(df: pd.DataFrame, plan_col: str = "PlanPct_%", actual_
 
 
 def sumaraja_scurve_chart(df: pd.DataFrame) -> go.Figure:
+    """Matches the vendor's original Excel S-Curve: weekly Plan/Actual as
+    grouped columns plus Cumulative Plan/Actual as lines on top, all on the
+    same 0-100% axis."""
     fig = go.Figure()
-    fig.add_trace(go.Scatter(
-        x=df["WeekStart"], y=df["PlanCumPct"], name="Plan (Sumaraja)",
-        mode="lines", line=dict(color=COLORS["plan"], width=2.5, dash="dot"),
-        hovertemplate="Plan: %{y:.2f}%<extra></extra>",
+
+    fig.add_trace(go.Bar(
+        x=df["WeekStart"], y=df["PlanWeeklyPct"], name="Plan",
+        marker=dict(color=COLORS["actual"]),
+        hovertemplate="Plan (week): %{y:.3f}%<extra></extra>",
+    ))
+    fig.add_trace(go.Bar(
+        x=df["WeekStart"], y=df["ActualWeeklyPct"], name="Actual",
+        marker=dict(color=COLORS["on_track"]),
+        hovertemplate="Actual (week): %{y:.3f}%<extra></extra>",
     ))
     fig.add_trace(go.Scatter(
-        x=df["WeekStart"], y=df["ActualCumPct"], name="Actual (Sumaraja)",
-        mode="lines+markers", line=dict(color=COLORS["teal"], width=3), marker=dict(size=5),
-        hovertemplate="Actual: %{y:.2f}%<extra></extra>",
+        x=df["WeekStart"], y=df["PlanCumPct"], name="Cummulative Plan",
+        mode="lines+markers", line=dict(color=COLORS["actual"], width=2.5),
+        marker=dict(size=6, color=COLORS["actual"]),
+        hovertemplate="Cumulative Plan: %{y:.2f}%<extra></extra>",
     ))
+    fig.add_trace(go.Scatter(
+        x=df["WeekStart"], y=df["ActualCumPct"], name="Cummulative Actual",
+        mode="lines+markers", line=dict(color=COLORS["on_track"], width=3),
+        marker=dict(size=6, color=COLORS["on_track"]),
+        hovertemplate="Cumulative Actual: %{y:.2f}%<extra></extra>",
+    ))
+
     fig.update_layout(
         **_BASE_LAYOUT,
-        height=320,
-        yaxis=dict(title="Cumulative %", ticksuffix="%", **_AXIS),
+        height=380,
+        barmode="group",
+        yaxis=dict(title="Cumulative %", range=[0, 100], ticksuffix="%", **_AXIS),
         xaxis=dict(title="Week", **_AXIS),
     )
     return fig
