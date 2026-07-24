@@ -1,44 +1,81 @@
 """
-config.py for Central configuration for the Project Monitoring Dashboard.
-
+config.py — Central configuration for the DCI Project Monitoring System.
 """
 
 from __future__ import annotations
 from pathlib import Path
+from datetime import datetime
+import subprocess
 
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
+ASSETS_DIR = BASE_DIR / "assets"
+
+APP_TITLE = "DCI PROJECT MONITORING SYSTEM"
+APP_VERSION = "v2.0.0"
+
+LOGO_PATH = ASSETS_DIR / "logo_dci.png"     # DCI logo
+REPORT_FILENAME = "DCI_Project_Report.pdf"  # Download filename
 
 
-# Top bar for projects & chapters (per project scope)
-PROJECTS: list[str] = ["JK5DH3", "JK6DH3", "JK7", "JK8", "H301", "H302", "GIS"]
-ACTIVE_PROJECTS: set[str] = {"JK7"}  
+def get_last_code_update() -> str:
+    """Latest Git commit date."""
+    try:
+        return subprocess.check_output(
+            ["git", "log", "-1", "--format=%cd", "--date=format:%d %b %Y"],
+            text=True,
+        ).strip()
+    except Exception:
+        return datetime.now().strftime("%d %b %Y")
+
+
+LAST_CODE_UPDATE = get_last_code_update()
+LAST_DATA_UPDATE = "-"  # Filled from Google Sheets
+
+# Top bar — Project + Chapter
+PROJECTS: list[str] = ["JK5", "JK6", "JK7", "JK8", "H301", "H302", "GIS"]
+ACTIVE_PROJECTS: set[str] = {"JK7"}
 
 CHAPTERS: dict[str, str] = {
     "1": "S-Curve",
-    "2": "HSE Manpower",
-    "3": "Document Control",
-    "4": "HSE Safety",
+    "2": "Manpower",
+    "3": "Document",
+    "4": "Safety",
     "5": "Equipment",
 }
-ACTIVE_CHAPTERS: set[str] = {"1", "2", "3"}  
+ACTIVE_CHAPTERS: set[str] = {"1", "2", "3"}
 
 
-# Local data paths (per project). Only JK7 is populated for now.
 def project_dir(project: str) -> Path:
     return DATA_DIR / project.lower()
 
 
-# Chapter 1 — S-Curve 
-CSV_SCURVE_MAIN = "scurve_main.csv"
-CSV_SCURVE_WORKBREAKDOWN = "scurve_workbreakdown.csv"
-JSON_SCURVE_META = "scurve_meta.json"
+# Google Sheet — single spreadsheet, one tab per project per chapter.
+# Tab naming convention (matches the source workbook Project-Archive-3.xlsx):
+#   <project>-scurve        Chapter 1 — daily zoning S-Curve (+ Zone/Kolom log)
+#   <project>-sri-scurve    Chapter 1 — vendor (Sumaraja) weekly work-item S-Curve
+#   <project>-manpower      Chapter 2 — HSE Manpower
+#   <project>-docon         Chapter 3 — Document Control
+#   <project>-hse-safety    Chapter 4 — HSE Safety
+#   <project>-equipment     Chapter 5 — Equipment
+def gsheet_tab(project: str, key: str) -> str:
+    return f"{project.lower()}-{key}"
 
 
-# Google Sheets
-GSHEET_TABS: dict[str, str] = {
-    "2": "HSE_Manpower",
-    "3": "Document_Control",
+# Chapter 1 — S-Curve
+SCURVE_MAIN_COLS = [
+    "Date", "PlanZoning", "PlanCum", "PlanPct_%", "ActualZoning",
+    "ActualCum", "ActualPct_%", "DevAbs_unit", "DevPct_%", "Remarks",
+]
+ZONE_KOLOM_COLS = ["Date Structure", "Level", "Metric", "Done", "Target"]
+ZONE_LEVELS: list[str] = ["GF", "L1", "L2"]
+ZONE_METRICS: list[str] = ["Zone", "Kolom"]
+
+# Denah (floor plan) images per level/metric — set to None where not available yet.
+DENAH_ASSETS: dict[str, dict[str, str | None]] = {
+    "GF": {"Zone": "assets/denah_gf.jpeg", "Kolom": "assets/denah_kolom_gf.jpg"},
+    "L1": {"Zone": "assets/denah_L1.jpeg", "Kolom": "assets/denah_kolom_L1.jpg"},
+    "L2": {"Zone": None, "Kolom": None},
 }
 
 
